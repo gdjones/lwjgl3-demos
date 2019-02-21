@@ -1,6 +1,6 @@
 /*
  * Copyright LWJGL. All rights reserved.
- * License terms: http://lwjgl.org/license.php
+ * License terms: https://www.lwjgl.org/license
  */
 #version 400 core
 #extension GL_ARB_bindless_texture : require
@@ -44,6 +44,7 @@ uniform Images {
 float random(vec2 f, float time);
 vec3 randomSpherePoint(vec3 rand);
 vec3 randomHemispherePoint(vec3 rand, vec3 n);
+vec3 randomCosineWeightedHemispherePoint(vec3 rand, vec3 n);
 
 struct hitinfo {
   float near;
@@ -68,7 +69,7 @@ bool intersectBoxes(vec3 origin, vec3 dir, out hitinfo info) {
   for (int i = 0; i < numBoxes; i++) {
     box b = boxes[i];
     vec2 lambda = intersectBox(origin, dir, b);
-    if (lambda.x > 0.0 && lambda.x < lambda.y && lambda.x < smallest) {
+    if (lambda.y >= 0.0 && lambda.x < lambda.y && lambda.x < smallest) {
       info.near = lambda.x;
       info.far = lambda.y;
       info.bi = i;
@@ -182,6 +183,7 @@ void main(void) {
   /* Sample random sphere point */
   vec3 randSphere = randomSpherePoint(rand);
   vec3 positionOnLight = lightCenterPosition + randSphere * lightRadius;
-  vec3 lightDirection = randomHemispherePoint(rand, randSphere);
+  //vec3 lightDirection = randomHemispherePoint(rand, randSphere);
+  vec3 lightDirection = randomCosineWeightedHemispherePoint(rand, randSphere);
   trace(positionOnLight, lightDirection);
 }

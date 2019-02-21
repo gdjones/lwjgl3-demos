@@ -1,6 +1,6 @@
 /*
  * Copyright LWJGL. All rights reserved.
- * License terms: http://lwjgl.org/license.php
+ * License terms: https://www.lwjgl.org/license
  */
 package org.lwjgl.demo.opengl.instancing;
 
@@ -37,7 +37,7 @@ import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.ARBVertexArrayObject;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLUtil;
-import org.lwjgl.system.Callback;
+import org.lwjgl.system.*;
 
 /**
  * Uses hardware instancing to render grass patches.
@@ -122,10 +122,12 @@ public class GrassDemo {
         glfwMakeContextCurrent(window);
         glfwSwapInterval(0);
         glfwShowWindow(window);
-        IntBuffer framebufferSize = BufferUtils.createIntBuffer(2);
-        nglfwGetFramebufferSize(window, memAddress(framebufferSize), memAddress(framebufferSize) + 4);
-        width = framebufferSize.get(0);
-        height = framebufferSize.get(1);
+        try (MemoryStack frame = MemoryStack.stackPush()) {
+            IntBuffer framebufferSize = frame.mallocInt(2);
+            nglfwGetFramebufferSize(window, memAddress(framebufferSize), memAddress(framebufferSize) + 4);
+            width = framebufferSize.get(0);
+            height = framebufferSize.get(1);
+        }
         GLCapabilities caps = createCapabilities();
         if (!caps.GL_ARB_vertex_array_object)
             throw new UnsupportedOperationException("ARB_vertex_array_object is not available");
@@ -213,7 +215,7 @@ public class GrassDemo {
         glLinkProgram(program);
         int linked = glGetProgrami(program, GL_LINK_STATUS);
         String programLog = glGetProgramInfoLog(program);
-        if (programLog != null && programLog.trim().length() > 0)
+        if (programLog.trim().length() > 0)
             System.err.println(programLog);
         if (linked == 0)
             throw new AssertionError("Could not link program");
@@ -245,7 +247,7 @@ public class GrassDemo {
         glLinkProgram(program);
         int linked = glGetProgrami(program, GL_LINK_STATUS);
         String programLog = glGetProgramInfoLog(program);
-        if (programLog != null && programLog.trim().length() > 0)
+        if (programLog.trim().length() > 0)
             System.err.println(programLog);
         if (linked == 0)
             throw new AssertionError("Could not link program");
@@ -322,7 +324,7 @@ public class GrassDemo {
         fb.flip();
         // Generate the world-space positions of each patch
         final FloatBuffer pb = BufferUtils.createFloatBuffer(NUM_GRASS_PATCHES * 4);
-        new BestCandidateSampling.Quad(0L, NUM_GRASS_PATCHES, 20, new Callback2d() {
+        new BestCandidateSampling.Quad().numSamples(NUM_GRASS_PATCHES).numCandidates(20).generate(new Callback2d() {
             final Random rnd = new Random(0L);
             int index = 0;
             public void onNewSample(float x, float y) {

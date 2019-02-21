@@ -1,6 +1,6 @@
 /*
  * Copyright LWJGL. All rights reserved.
- * License terms: http://lwjgl.org/license.php
+ * License terms: https://www.lwjgl.org/license
  */
 #version 430 core
 
@@ -43,8 +43,7 @@ const vec3 lightCenterPosition = vec3(1.5, 1.5, 1.5);
 const vec4 lightColor = vec4(1);
 
 float random(vec2 f, float time);
-vec3 randomDiskPoint(vec3 rand, vec3 n, vec3 up);
-vec3 randomHemispherePoint(vec3 rand, vec3 n);
+vec3 randomDiskPoint(vec3 rand, vec3 n);
 
 /*
  * We need random values every now and then.
@@ -114,7 +113,7 @@ bool intersect(vec3 origin, vec3 dir, out hitinfo info) {
   for (int i = 0; i < numObjects; i++) {
     const object o = objects[i];
     vec2 lambda = intersectObject(origin, dir, o);
-    if (lambda.y > 0.0 && lambda.x <= lambda.y && lambda.x < info.t) {
+    if (lambda.y >= 0.0 && lambda.x <= lambda.y && lambda.x < info.t) {
       if (intersectTriangles(origin, dir, o, info)) {
         hit = true;
       }
@@ -129,7 +128,7 @@ vec4 trace(vec3 hitPoint, vec3 normal) {
   vec4 attenuation = vec4(1.0);
   bool intersected = false;
   vec3 lightNormal = normalize(hitPoint - lightCenterPosition);
-  vec3 lightPosition = lightCenterPosition + randomDiskPoint(rand, lightNormal, cameraUp) * lightRadius;
+  vec3 lightPosition = lightCenterPosition + randomDiskPoint(rand, lightNormal) * lightRadius;
   vec3 shadowRayDir = lightPosition - hitPoint;
   vec3 shadowRayStart = hitPoint + normal * EPSILON;
   hitinfo shadowRayInfo;

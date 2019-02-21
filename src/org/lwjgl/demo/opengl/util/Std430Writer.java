@@ -1,6 +1,6 @@
 /*
  * Copyright LWJGL. All rights reserved.
- * License terms: http://lwjgl.org/license.php
+ * License terms: https://www.lwjgl.org/license
  */
 package org.lwjgl.demo.opengl.util;
 
@@ -57,6 +57,7 @@ public class Std430Writer {
         /* Compute necessary padding after each field */
         for (int i = 0; i < fields.length; i++) {
             Field f = fields[i];
+            f.setAccessible(true);
             Class<?> t = f.getType();
             int len = 1;
             if (t.isArray()) {

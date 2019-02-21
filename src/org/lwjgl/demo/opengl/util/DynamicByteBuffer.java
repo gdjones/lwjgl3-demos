@@ -1,12 +1,12 @@
 /*
  * Copyright LWJGL. All rights reserved.
- * License terms: http://lwjgl.org/license.php
+ * License terms: https://www.lwjgl.org/license
  */
 package org.lwjgl.demo.opengl.util;
 
 import java.nio.ByteBuffer;
 
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.*;
 
 /**
  * Dynamically growable {@link ByteBuffer}.
@@ -15,65 +15,70 @@ import org.lwjgl.BufferUtils;
  */
 public class DynamicByteBuffer {
 
-	public ByteBuffer bb;
+    public ByteBuffer bb;
 
-	public DynamicByteBuffer() {
-		bb = BufferUtils.createByteBuffer(1024);
-	}
+    public DynamicByteBuffer() {
+        this(8192);
+    }
+    public DynamicByteBuffer(int initialSize) {
+        bb = MemoryUtil.memAlloc(initialSize);
+    }
 
-	private void grow() {
-		ByteBuffer newbb = BufferUtils.createByteBuffer((int) (bb.capacity() * 1.5));
-		bb.flip();
-		newbb.put(bb);
-		bb = newbb;
-	}
+    private void grow() {
+        ByteBuffer newbb = MemoryUtil.memRealloc(bb, (int) (bb.capacity() * 1.5));
+        bb = newbb;
+    }
 
-	public DynamicByteBuffer putFloat(float v) {
-		if (bb.remaining() < 4) {
-			grow();
-		}
-		bb.putFloat(v);
-		return this;
-	}
+    public void free() {
+        MemoryUtil.memFree(bb);
+    }
 
-	public DynamicByteBuffer putLong(long v) {
-		if (bb.remaining() < 8) {
-			grow();
-		}
-		bb.putLong(v);
-		return this;
-	}
+    public DynamicByteBuffer putFloat(float v) {
+        if (bb.remaining() < 4) {
+            grow();
+        }
+        bb.putFloat(v);
+        return this;
+    }
 
-	public DynamicByteBuffer putInt(int v) {
-		if (bb.remaining() < 4) {
-			grow();
-		}
-		bb.putInt(v);
-		return this;
-	}
+    public DynamicByteBuffer putLong(long v) {
+        if (bb.remaining() < 8) {
+            grow();
+        }
+        bb.putLong(v);
+        return this;
+    }
 
-	public int position() {
-		return bb.position();
-	}
+    public DynamicByteBuffer putInt(int v) {
+        if (bb.remaining() < 4) {
+            grow();
+        }
+        bb.putInt(v);
+        return this;
+    }
 
-	public int capacity() {
-		return bb.capacity();
-	}
+    public DynamicByteBuffer putShort(int v) {
+        if (bb.remaining() < 2) {
+            grow();
+        }
+        bb.putShort((short) (v & 0xFFFF));
+        return this;
+    }
 
-	public void flip() {
-		bb.flip();
-	}
+    public DynamicByteBuffer putByte(int v) {
+        if (bb.remaining() < 1) {
+            grow();
+        }
+        bb.put((byte) (v & 0xFF));
+        return this;
+    }
 
-	public int remaining() {
-		return bb.remaining();
-	}
+    public void flip() {
+        bb.flip();
+    }
 
-	public DynamicByteBuffer put(byte b) {
-		if (bb.remaining() < 1) {
-			grow();
-		}
-		bb.put(b);
-		return this;
-	}
+    public int remaining() {
+        return bb.remaining();
+    }
 
 }

@@ -1,6 +1,6 @@
 /*
  * Copyright LWJGL. All rights reserved.
- * License terms: http://lwjgl.org/license.php
+ * License terms: https://www.lwjgl.org/license
  */
 #version 110
 
@@ -36,9 +36,9 @@ const vec3 lightCenterPosition = vec3(1.5, 2.9, 3);
 const vec4 lightColor = vec4(1);
 
 float random(vec2 f, float time);
-vec3 randomDiskPoint(vec3 rand, vec3 n, vec3 up);
+vec3 randomDiskPoint(vec3 rand, vec3 n);
 vec3 randomHemispherePoint(vec3 rand, vec3 n);
-vec3 randomHemisphereCosineWeightedPoint(vec3 rand, vec3 dir);
+vec3 randomCosineWeightedHemispherePoint(vec3 rand, vec3 dir);
 
 struct hitinfo {
   float near;
@@ -88,7 +88,7 @@ bool intersectBoxes(vec3 origin, vec3 dir, out hitinfo info) {
   for (int i = 0; i < numBoxes; i++) {
     box b = sampleBox(i);
     vec2 lambda = intersectBox(origin, dir, b);
-    if (lambda.x > 0.0 && lambda.x < lambda.y && lambda.x < smallest) {
+    if (lambda.y >= 0.0 && lambda.x < lambda.y && lambda.x < smallest) {
       info.near = lambda.x;
       info.far = lambda.y;
       info.bi = i;
@@ -124,7 +124,7 @@ vec4 trace(vec3 origin, vec3 dir) {
       vec3 hitPoint = origin + i.near * dir;
       vec3 normal = normalForBox(hitPoint, b);
       vec3 lightNormal = normalize(hitPoint - lightCenterPosition);
-      vec3 lightPosition = lightCenterPosition + randomDiskPoint(rand, lightNormal, cameraUp) * LIGHT_RADIUS;
+      vec3 lightPosition = lightCenterPosition + randomDiskPoint(rand, lightNormal) * LIGHT_RADIUS;
       vec3 shadowRayDir = lightPosition - hitPoint;
       vec3 shadowRayStart = hitPoint + normal * EPSILON;
       hitinfo shadowRayInfo;
@@ -136,7 +136,7 @@ vec4 trace(vec3 origin, vec3 dir) {
         accumulated += attenuation * vec4(lightColor * LIGHT_BASE_INTENSITY * cosineFallOff * oneOverR2);
       }
       origin = shadowRayStart;
-      dir = randomHemisphereCosineWeightedPoint(rand, normal);
+      dir = randomCosineWeightedHemispherePoint(rand, normal);
       attenuation *= dot(normal, dir);
     } else {
       break;

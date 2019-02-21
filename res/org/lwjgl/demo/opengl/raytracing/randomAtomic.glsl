@@ -1,6 +1,6 @@
 /*
  * Copyright LWJGL. All rights reserved.
- * License terms: http://lwjgl.org/license.php
+ * License terms: https://www.lwjgl.org/license
  */
 #version 420 core
 
@@ -10,11 +10,11 @@ layout(binding = 0) uniform atomic_uint counter;
  * http://amindforeverprogramming.blogspot.de/2013/07/random-floats-in-glsl-330.html
  */
 uint hash(uint x) {
-  x += (x << 10u);
-  x ^= (x >> 6u);
-  x += (x << 3u);
-  x ^= (x >> 11u);
-  x += (x << 15u);
+  x += x << 10u;
+  x ^= x >> 6u;
+  x += x << 3u;
+  x ^= x >> 11u;
+  x += x << 15u;
   return x;
 }
 

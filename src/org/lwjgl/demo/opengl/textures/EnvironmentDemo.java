@@ -1,6 +1,6 @@
 /*
  * Copyright LWJGL. All rights reserved.
- * License terms: http://lwjgl.org/license.php
+ * License terms: https://www.lwjgl.org/license
  */
 package org.lwjgl.demo.opengl.textures;
 
@@ -10,7 +10,7 @@ import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLUtil;
-import org.lwjgl.system.Callback;
+import org.lwjgl.system.*;
 import org.joml.Matrix4f;
 
 import java.io.IOException;
@@ -133,10 +133,12 @@ public class EnvironmentDemo {
         glfwShowWindow(window);
         glfwSetCursorPos(window, width / 2, height / 2);
 
-        IntBuffer framebufferSize = BufferUtils.createIntBuffer(2);
-        nglfwGetFramebufferSize(window, memAddress(framebufferSize), memAddress(framebufferSize) + 4);
-        fbWidth = framebufferSize.get(0);
-        fbHeight = framebufferSize.get(1);
+        try (MemoryStack frame = MemoryStack.stackPush()) {
+            IntBuffer framebufferSize = frame.mallocInt(2);
+            nglfwGetFramebufferSize(window, memAddress(framebufferSize), memAddress(framebufferSize) + 4);
+            width = framebufferSize.get(0);
+            height = framebufferSize.get(1);
+        }
 
         caps = GL.createCapabilities();
         if (!caps.GL_ARB_shader_objects)
@@ -177,7 +179,7 @@ public class EnvironmentDemo {
         glCompileShaderARB(shader);
         int compiled = glGetObjectParameteriARB(shader, GL_OBJECT_COMPILE_STATUS_ARB);
         String shaderLog = glGetInfoLogARB(shader);
-        if (shaderLog != null && shaderLog.trim().length() > 0) {
+        if (shaderLog.trim().length() > 0) {
             System.err.println(shaderLog);
         }
         if (compiled == 0) {
@@ -195,7 +197,7 @@ public class EnvironmentDemo {
         glLinkProgramARB(program);
         int linked = glGetObjectParameteriARB(program, GL_OBJECT_LINK_STATUS_ARB);
         String programLog = glGetInfoLogARB(program);
-        if (programLog != null && programLog.trim().length() > 0) {
+        if (programLog.trim().length() > 0) {
             System.err.println(programLog);
         }
         if (linked == 0) {

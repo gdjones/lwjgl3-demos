@@ -1,6 +1,6 @@
 /*
  * Copyright LWJGL. All rights reserved.
- * License terms: http://lwjgl.org/license.php
+ * License terms: https://www.lwjgl.org/license
  */
 package org.lwjgl.demo.opengl.raytracing;
 
@@ -19,7 +19,7 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLUtil;
 import org.lwjgl.opengl.NVDrawTexture;
-import org.lwjgl.system.Callback;
+import org.lwjgl.system.*;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -37,14 +37,7 @@ import java.util.Queue;
 import static java.lang.Math.*;
 import static org.lwjgl.demo.opengl.util.DemoUtils.*;
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL33.*;
-import static org.lwjgl.opengl.GL42.*;
-import static org.lwjgl.opengl.GL43.*;
-import static org.lwjgl.system.MathUtil.*;
+import static org.lwjgl.opengl.GL43C.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
 /**
@@ -207,10 +200,12 @@ public class DemoSsboTrianglesStacklessKdTree {
         glfwSwapInterval(0);
         glfwShowWindow(window);
 
-        IntBuffer framebufferSize = BufferUtils.createIntBuffer(2);
-        nglfwGetFramebufferSize(window, memAddress(framebufferSize), memAddress(framebufferSize) + 4);
-        width = framebufferSize.get(0);
-        height = framebufferSize.get(1);
+        try (MemoryStack frame = MemoryStack.stackPush()) {
+            IntBuffer framebufferSize = frame.mallocInt(2);
+            nglfwGetFramebufferSize(window, memAddress(framebufferSize), memAddress(framebufferSize) + 4);
+            width = framebufferSize.get(0);
+            height = framebufferSize.get(1);
+        }
 
         caps = GL.createCapabilities();
         debugProc = GLUtil.setupDebugMessageCallback();
@@ -394,7 +389,7 @@ public class DemoSsboTrianglesStacklessKdTree {
         glLinkProgram(program);
         int linked = glGetProgrami(program, GL_LINK_STATUS);
         String programLog = glGetProgramInfoLog(program);
-        if (programLog != null && programLog.trim().length() > 0) {
+        if (programLog.trim().length() > 0) {
             System.err.println(programLog);
         }
         if (linked == 0) {
@@ -424,7 +419,7 @@ public class DemoSsboTrianglesStacklessKdTree {
         glLinkProgram(program);
         int linked = glGetProgrami(program, GL_LINK_STATUS);
         String programLog = glGetProgramInfoLog(program);
-        if (programLog != null && programLog.trim().length() > 0) {
+        if (programLog.trim().length() > 0) {
             System.err.println(programLog);
         }
         if (linked == 0) {
@@ -546,12 +541,14 @@ public class DemoSsboTrianglesStacklessKdTree {
         /* Bind the SSBO containing our triangles */
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, trianglesSsboBinding, trianglesSsbo);
 
-        /* Compute appropriate invocation dimension. */
-        int worksizeX = mathRoundPoT(width);
-        int worksizeY = mathRoundPoT(height);
+        /*
+         * Compute appropriate global work size dimensions.
+         */
+        int numGroupsX = (int) Math.ceil((double)width / workGroupSizeX);
+        int numGroupsY = (int) Math.ceil((double)height / workGroupSizeY);
 
         /* Invoke the compute shader. */
-        glDispatchCompute(worksizeX / workGroupSizeX, worksizeY / workGroupSizeY, 1);
+        glDispatchCompute(numGroupsX, numGroupsY, 1);
 
         /*
          * Synchronize all writes to the framebuffer image before we let OpenGL source texels from it afterwards when

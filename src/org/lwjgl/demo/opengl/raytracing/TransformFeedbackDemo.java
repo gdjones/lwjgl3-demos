@@ -1,6 +1,6 @@
 /*
  * Copyright LWJGL. All rights reserved.
- * License terms: http://lwjgl.org/license.php
+ * License terms: https://www.lwjgl.org/license
  */
 package org.lwjgl.demo.opengl.raytracing;
 
@@ -13,7 +13,7 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLUtil;
 import org.lwjgl.opengl.NVDrawTexture;
-import org.lwjgl.system.Callback;
+import org.lwjgl.system.*;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -25,14 +25,7 @@ import java.nio.IntBuffer;
 
 import static java.lang.Math.*;
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL33.*;
-import static org.lwjgl.opengl.GL42.*;
-import static org.lwjgl.opengl.GL43.*;
-import static org.lwjgl.system.MathUtil.*;
+import static org.lwjgl.opengl.GL43C.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
 /**
@@ -209,10 +202,12 @@ public class TransformFeedbackDemo {
         glfwSwapInterval(0);
         glfwShowWindow(window);
 
-        IntBuffer framebufferSize = BufferUtils.createIntBuffer(2);
-        nglfwGetFramebufferSize(window, memAddress(framebufferSize), memAddress(framebufferSize) + 4);
-        width = framebufferSize.get(0);
-        height = framebufferSize.get(1);
+        try (MemoryStack frame = MemoryStack.stackPush()) {
+            IntBuffer framebufferSize = frame.mallocInt(2);
+            nglfwGetFramebufferSize(window, memAddress(framebufferSize), memAddress(framebufferSize) + 4);
+            width = framebufferSize.get(0);
+            height = framebufferSize.get(1);
+        }
 
         /* Load OBJ model */
         WavefrontMeshLoader loader = new WavefrontMeshLoader();
@@ -309,7 +304,7 @@ public class TransformFeedbackDemo {
         glLinkProgram(program);
         int linked = glGetProgrami(program, GL_LINK_STATUS);
         String programLog = glGetProgramInfoLog(program);
-        if (programLog != null && programLog.trim().length() > 0) {
+        if (programLog.trim().length() > 0) {
             System.err.println(programLog);
         }
         if (linked == 0) {
@@ -338,7 +333,7 @@ public class TransformFeedbackDemo {
         glLinkProgram(program);
         int linked = glGetProgrami(program, GL_LINK_STATUS);
         String programLog = glGetProgramInfoLog(program);
-        if (programLog != null && programLog.trim().length() > 0) {
+        if (programLog.trim().length() > 0) {
             System.err.println(programLog);
         }
         if (linked == 0) {
@@ -372,7 +367,7 @@ public class TransformFeedbackDemo {
         glLinkProgram(program);
         int linked = glGetProgrami(program, GL_LINK_STATUS);
         String programLog = glGetProgramInfoLog(program);
-        if (programLog != null && programLog.trim().length() > 0) {
+        if (programLog.trim().length() > 0) {
             System.err.println(programLog);
         }
         if (linked == 0) {
@@ -540,12 +535,14 @@ public class TransformFeedbackDemo {
         /* Bind level 0 of framebuffer texture as writable image in the shader. */
         glBindImageTexture(framebufferImageBinding, raytraceTexture, 0, false, 0, GL_WRITE_ONLY, GL_RGBA8);
 
-        /* Compute appropriate invocation dimension. */
-        int worksizeX = mathRoundPoT(width);
-        int worksizeY = mathRoundPoT(height);
+        /*
+         * Compute appropriate global work size dimensions.
+         */
+        int numGroupsX = (int) Math.ceil((double)width / workGroupSizeX);
+        int numGroupsY = (int) Math.ceil((double)height / workGroupSizeY);
 
         /* Invoke the compute shader. */
-        glDispatchCompute(worksizeX / workGroupSizeX, worksizeY / workGroupSizeY, 1);
+        glDispatchCompute(numGroupsX, numGroupsY, 1);
 
         /*
          * Synchronize all writes to the framebuffer image before we let OpenGL source texels from it afterwards when

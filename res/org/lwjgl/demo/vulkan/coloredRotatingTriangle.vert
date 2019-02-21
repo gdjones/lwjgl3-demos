@@ -1,3 +1,7 @@
+/*
+ * Copyright LWJGL. All rights reserved.
+ * License terms: https://www.lwjgl.org/license
+ */
 #version 450
 
 layout(location=0) in vec2 position;
@@ -8,7 +12,7 @@ layout(binding=0) uniform Matrices
   mat4 model;
 };
 
-out vec3 outColor;
+layout(location=0) out vec3 outColor;
 
 void main(void) {
   outColor = color;

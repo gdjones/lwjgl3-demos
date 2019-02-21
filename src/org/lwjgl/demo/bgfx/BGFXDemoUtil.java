@@ -7,7 +7,6 @@ package org.lwjgl.demo.bgfx;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.bgfx.*;
-import org.lwjgl.system.MemoryUtil;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -16,248 +15,250 @@ import java.nio.ByteBuffer;
 
 import static org.lwjgl.bgfx.BGFX.*;
 import static org.lwjgl.system.APIUtil.apiLog;
-import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.MemoryUtil.*;
 
 @SuppressWarnings("StaticNonFinalField")
 final class BGFXDemoUtil {
 
-	private static int renderer = -1;
-	private static boolean zZeroToOne;
-
-	private static BGFXReleaseFunctionCallbackI releaseMemoryCb =
-			(_ptr, _userData) -> MemoryUtil.nmemFree(_ptr);
-
-	private BGFXDemoUtil() {
-	}
+    private static int renderer = -1;
+    private static boolean zZeroToOne;
+
+    private static BGFXReleaseFunctionCallback releaseMemoryCb = BGFXReleaseFunctionCallback.create((_ptr, _userData) -> nmemFree(_ptr));
 
-	static void configure(int renderer) {
-		BGFXDemoUtil.renderer = renderer;
-		BGFXDemoUtil.zZeroToOne = !bgfx_get_caps().homogeneousDepth();
-	}
+    private BGFXDemoUtil() {
+    }
 
-	static BGFXVertexDecl createVertexDecl(boolean withNormals, boolean withColor, int numUVs) {
+    static void configure(int renderer) {
+        BGFXDemoUtil.renderer = renderer;
+        BGFXDemoUtil.zZeroToOne = !bgfx_get_caps().homogeneousDepth();
+    }
 
-		BGFXVertexDecl decl = BGFXVertexDecl.calloc();
+    static void dispose() {
+        releaseMemoryCb.free();
+    }
 
-		bgfx_vertex_decl_begin(decl, renderer);
+    static BGFXVertexDecl createVertexDecl(boolean withNormals, boolean withColor, int numUVs) {
 
-		bgfx_vertex_decl_add(decl,
-				BGFX_ATTRIB_POSITION,
-				3,
-				BGFX_ATTRIB_TYPE_FLOAT,
-				false,
-				false);
+        BGFXVertexDecl decl = BGFXVertexDecl.calloc();
 
-		if (withNormals) {
-			bgfx_vertex_decl_add(decl,
-					BGFX_ATTRIB_NORMAL,
-					3,
-					BGFX_ATTRIB_TYPE_FLOAT,
-					false,
-					false);
-		}
+        bgfx_vertex_decl_begin(decl, renderer);
 
-		if (withColor) {
-			bgfx_vertex_decl_add(decl,
-					BGFX_ATTRIB_COLOR0,
-					4,
-					BGFX_ATTRIB_TYPE_UINT8,
-					true,
-					false);
-		}
+        bgfx_vertex_decl_add(decl,
+                BGFX_ATTRIB_POSITION,
+                3,
+                BGFX_ATTRIB_TYPE_FLOAT,
+                false,
+                false);
 
-		if (numUVs > 0) {
-			bgfx_vertex_decl_add(decl,
-					BGFX_ATTRIB_TEXCOORD0,
-					2,
-					BGFX_ATTRIB_TYPE_FLOAT,
-					false,
-					false);
-		}
+        if (withNormals) {
+            bgfx_vertex_decl_add(decl,
+                    BGFX_ATTRIB_NORMAL,
+                    3,
+                    BGFX_ATTRIB_TYPE_FLOAT,
+                    false,
+                    false);
+        }
 
-		bgfx_vertex_decl_end(decl);
+        if (withColor) {
+            bgfx_vertex_decl_add(decl,
+                    BGFX_ATTRIB_COLOR0,
+                    4,
+                    BGFX_ATTRIB_TYPE_UINT8,
+                    true,
+                    false);
+        }
 
-		return decl;
-	}
+        if (numUVs > 0) {
+            bgfx_vertex_decl_add(decl,
+                    BGFX_ATTRIB_TEXCOORD0,
+                    2,
+                    BGFX_ATTRIB_TYPE_FLOAT,
+                    false,
+                    false);
+        }
 
-	static short createVertexBuffer(ByteBuffer buffer, BGFXVertexDecl decl, Object[][] vertices) {
+        bgfx_vertex_decl_end(decl);
 
-		for (Object[] vtx : vertices) {
-			for (Object attr : vtx) {
-				if (attr instanceof Float) {
-					buffer.putFloat((float) attr);
-				} else if (attr instanceof Integer) {
-					buffer.putInt((int) attr);
-				} else {
-					throw new RuntimeException("Invalid parameter type");
-				}
-			}
-		}
+        return decl;
+    }
 
-		if (buffer.remaining() != 0) {
-			throw new RuntimeException("ByteBuffer size and number of arguments do not match");
-		}
+    static short createVertexBuffer(ByteBuffer buffer, BGFXVertexDecl decl, Object[][] vertices) {
 
-		buffer.flip();
+        for (Object[] vtx : vertices) {
+            for (Object attr : vtx) {
+                if (attr instanceof Float) {
+                    buffer.putFloat((float) attr);
+                } else if (attr instanceof Integer) {
+                    buffer.putInt((int) attr);
+                } else {
+                    throw new RuntimeException("Invalid parameter type");
+                }
+            }
+        }
 
-		return createVertexBuffer(buffer, decl);
-	}
+        if (buffer.remaining() != 0) {
+            throw new RuntimeException("ByteBuffer size and number of arguments do not match");
+        }
 
-	static short createVertexBuffer(ByteBuffer buffer, BGFXVertexDecl decl) {
+        buffer.flip();
 
-		BGFXMemory vbhMem = bgfx_make_ref(buffer);
+        return createVertexBuffer(buffer, decl);
+    }
 
-		return bgfx_create_vertex_buffer(vbhMem, decl, BGFX_BUFFER_NONE);
-	}
+    static short createVertexBuffer(ByteBuffer buffer, BGFXVertexDecl decl) {
 
-	static short createIndexBuffer(ByteBuffer buffer, int[] indices) {
+        BGFXMemory vbhMem = bgfx_make_ref(buffer);
 
-		for (int idx : indices) {
-			buffer.putShort((short) idx);
-		}
+        return bgfx_create_vertex_buffer(vbhMem, decl, BGFX_BUFFER_NONE);
+    }
 
-		if (buffer.remaining() != 0) {
-			throw new RuntimeException("ByteBuffer size and number of arguments do not match");
-		}
+    static short createIndexBuffer(ByteBuffer buffer, int[] indices) {
 
-		buffer.flip();
+        for (int idx : indices) {
+            buffer.putShort((short) idx);
+        }
 
-		BGFXMemory ibhMem = bgfx_make_ref(buffer);
+        if (buffer.remaining() != 0) {
+            throw new RuntimeException("ByteBuffer size and number of arguments do not match");
+        }
 
-		return bgfx_create_index_buffer(ibhMem, BGFX_BUFFER_NONE);
-	}
+        buffer.flip();
 
-	private static ByteBuffer loadResource(String resourcePath, String name) throws IOException {
+        BGFXMemory ibhMem = bgfx_make_ref(buffer);
 
-		URL url = BGFXDemoUtil.class.getResource(resourcePath + name);
+        return bgfx_create_index_buffer(ibhMem, BGFX_BUFFER_NONE);
+    }
 
-		if (url == null) {
-			throw new IOException("Resource not found: " + resourcePath + "/" + name);
-		}
+    private static ByteBuffer loadResource(String resourcePath, String name) throws IOException {
 
-		int resourceSize = url.openConnection().getContentLength();
+        URL url = BGFXDemoUtil.class.getResource(resourcePath + name);
 
-		apiLog("bgfx: loading resource '" + url.getFile() + "' (" + resourceSize + " bytes)");
+        if (url == null) {
+            throw new IOException("Resource not found: " + resourcePath + "/" + name);
+        }
 
-		ByteBuffer resource = MemoryUtil.memAlloc(resourceSize);
+        int resourceSize = url.openConnection().getContentLength();
 
-		try (BufferedInputStream bis = new BufferedInputStream(url.openStream())) {
-			int b;
-			do {
-				b = bis.read();
-				if (b != -1) {
-					resource.put((byte) b);
-				}
-			} while (b != -1);
-		}
+        apiLog("bgfx: loading resource '" + url.getFile() + "' (" + resourceSize + " bytes)");
 
-		resource.flip();
+        ByteBuffer resource = memAlloc(resourceSize);
 
-		return resource;
-	}
+        try (BufferedInputStream bis = new BufferedInputStream(url.openStream())) {
+            int b;
+            do {
+                b = bis.read();
+                if (b != -1) {
+                    resource.put((byte) b);
+                }
+            } while (b != -1);
+        }
 
-	static short loadShader(String name) throws IOException {
+        resource.flip();
 
-		String resourcePath = "/org/lwjgl/demo/bgfx/shaders/";
+        return resource;
+    }
 
-		switch (renderer) {
+    static short loadShader(String name) throws IOException {
 
-			case BGFX_RENDERER_TYPE_DIRECT3D11:
-			case BGFX_RENDERER_TYPE_DIRECT3D12:
-				resourcePath += "dx11/";
-				break;
+        String resourcePath = "/org/lwjgl/demo/bgfx/shaders/";
 
-			case BGFX_RENDERER_TYPE_DIRECT3D9:
-				resourcePath += "dx9/";
-				break;
+        switch (renderer) {
 
-			case BGFX_RENDERER_TYPE_OPENGL:
-				resourcePath += "glsl/";
-				break;
+            case BGFX_RENDERER_TYPE_DIRECT3D11:
+            case BGFX_RENDERER_TYPE_DIRECT3D12:
+                resourcePath += "dx11/";
+                break;
 
-			case BGFX_RENDERER_TYPE_METAL:
-				resourcePath += "metal/";
-				break;
+            case BGFX_RENDERER_TYPE_DIRECT3D9:
+                resourcePath += "dx9/";
+                break;
 
-			default:
-				throw new IOException("No demo shaders supported for " + bgfx_get_renderer_name(renderer) + " renderer");
-		}
+            case BGFX_RENDERER_TYPE_OPENGL:
+                resourcePath += "glsl/";
+                break;
 
-		ByteBuffer shaderCode = loadResource(resourcePath, name + ".bin");
+            case BGFX_RENDERER_TYPE_METAL:
+                resourcePath += "metal/";
+                break;
 
-		return bgfx_create_shader(bgfx_make_ref_release(shaderCode, releaseMemoryCb, NULL));
-	}
+            default:
+                throw new IOException("No demo shaders supported for " + bgfx_get_renderer_name(renderer) + " renderer");
+        }
 
-	static short loadShader(char[] shaderCodeGLSL, char[] shaderCodeD3D9, char[] shaderCodeD3D11, char[] shaderCodeMtl) throws IOException {
+        ByteBuffer shaderCode = loadResource(resourcePath, name + ".bin");
 
-		char[] sc;
+        return bgfx_create_shader(bgfx_make_ref_release(shaderCode, releaseMemoryCb, NULL));
+    }
 
-		switch (renderer) {
+    static short loadShader(char[] shaderCodeGLSL, char[] shaderCodeD3D9, char[] shaderCodeD3D11, char[] shaderCodeMtl) throws IOException {
+        char[] sc;
 
-			case BGFX_RENDERER_TYPE_DIRECT3D11:
-			case BGFX_RENDERER_TYPE_DIRECT3D12:
-				sc = shaderCodeD3D11;
-				break;
+        switch (renderer) {
 
-			case BGFX_RENDERER_TYPE_DIRECT3D9:
-				sc = shaderCodeD3D9;
-				break;
+            case BGFX_RENDERER_TYPE_DIRECT3D11:
+            case BGFX_RENDERER_TYPE_DIRECT3D12:
+                sc = shaderCodeD3D11;
+                break;
 
-			case BGFX_RENDERER_TYPE_OPENGL:
-				sc = shaderCodeGLSL;
-				break;
+            case BGFX_RENDERER_TYPE_DIRECT3D9:
+                sc = shaderCodeD3D9;
+                break;
 
-			case BGFX_RENDERER_TYPE_METAL:
-				sc = shaderCodeMtl;
-				break;
+            case BGFX_RENDERER_TYPE_OPENGL:
+                sc = shaderCodeGLSL;
+                break;
 
-			default:
-				throw new IOException("No demo shaders supported for " + bgfx_get_renderer_name(renderer) + " renderer");
-		}
+            case BGFX_RENDERER_TYPE_METAL:
+                sc = shaderCodeMtl;
+                break;
 
-		ByteBuffer shaderCode = MemoryUtil.memAlloc(sc.length);
+            default:
+                throw new IOException("No demo shaders supported for " + bgfx_get_renderer_name(renderer) + " renderer");
+        }
 
-		for (char c : sc) {
-			shaderCode.put((byte) c);
-		}
+        ByteBuffer shaderCode = memAlloc(sc.length);
 
-		shaderCode.flip();
+        for (char c : sc) {
+            shaderCode.put((byte) c);
+        }
 
-		return bgfx_create_shader(bgfx_make_ref_release(shaderCode, releaseMemoryCb, NULL));
-	}
+        shaderCode.flip();
 
-	static short loadTexture(String fileName) throws IOException {
+        return bgfx_create_shader(bgfx_make_ref_release(shaderCode, releaseMemoryCb, NULL));
+    }
 
-		ByteBuffer textureData = loadResource("/org/lwjgl/demo/bgfx/textures/", fileName);
+    static short loadTexture(String fileName) throws IOException {
 
-		BGFXMemory textureMemory = bgfx_make_ref_release(textureData, releaseMemoryCb, NULL);
+        ByteBuffer textureData = loadResource("/org/lwjgl/demo/bgfx/textures/", fileName);
 
-		return bgfx_create_texture(textureMemory, BGFX_TEXTURE_NONE, 0, null);
-	}
+        BGFXMemory textureMemory = bgfx_make_ref_release(textureData, releaseMemoryCb, NULL);
 
-	static void reportSupportedRenderers() {
-		int[] rendererTypes = new int[BGFX_RENDERER_TYPE_COUNT];
-		int count = bgfx_get_supported_renderers(rendererTypes);
+        return bgfx_create_texture(textureMemory, BGFX_TEXTURE_NONE, 0, null);
+    }
 
-		apiLog("bgfx: renderers supported");
+    static void reportSupportedRenderers() {
+        int[] rendererTypes = new int[BGFX_RENDERER_TYPE_COUNT];
+        int count = bgfx_get_supported_renderers(rendererTypes);
 
-		for (int i = 0; i < count; i++) {
-			apiLog("    " + bgfx_get_renderer_name(rendererTypes[i]));
-		}
-	}
+        apiLog("bgfx: renderers supported");
 
-	static void lookAt(Vector3f at, Vector3f eye, Matrix4f dest) {
-		dest.setLookAtLH(eye.x, eye.y, eye.z, at.x, at.y, at.z, 0.0f, 1.0f, 0.0f);
-	}
+        for (int i = 0; i < count; i++) {
+            apiLog("    " + bgfx_get_renderer_name(rendererTypes[i]));
+        }
+    }
 
-	static void perspective(float fov, int width, int height, float near, float far, Matrix4f dest) {
-		float fovRadians = fov * (float) Math.PI / 180.0f;
-		float aspect = width / (float) height;
-		dest.setPerspectiveLH(fovRadians, aspect, near, far, zZeroToOne);
-	}
+    static void lookAt(Vector3f at, Vector3f eye, Matrix4f dest) {
+        dest.setLookAtLH(eye.x, eye.y, eye.z, at.x, at.y, at.z, 0.0f, 1.0f, 0.0f);
+    }
 
-	static void ortho(float left, float right, float bottom, float top, float zNear, float zFar, Matrix4f dest) {
-		dest.setOrthoLH(left, right, bottom, top, zNear, zFar, zZeroToOne);
-	}
+    static void perspective(float fov, int width, int height, float near, float far, Matrix4f dest) {
+        float fovRadians = fov * (float) Math.PI / 180.0f;
+        float aspect = width / (float) height;
+        dest.setPerspectiveLH(fovRadians, aspect, near, far, zZeroToOne);
+    }
+
+    static void ortho(float left, float right, float bottom, float top, float zNear, float zFar, Matrix4f dest) {
+        dest.setOrthoLH(left, right, bottom, top, zNear, zFar, zZeroToOne);
+    }
 
 }

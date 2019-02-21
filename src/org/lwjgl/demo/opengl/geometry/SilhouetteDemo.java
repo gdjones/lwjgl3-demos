@@ -1,6 +1,6 @@
 /*
  * Copyright LWJGL. All rights reserved.
- * License terms: http://lwjgl.org/license.php
+ * License terms: https://www.lwjgl.org/license
  */
 package org.lwjgl.demo.opengl.geometry;
 
@@ -180,7 +180,7 @@ public class SilhouetteDemo {
         glLinkProgram(program);
         int linked = glGetProgrami(program, GL_LINK_STATUS);
         String programLog = glGetProgramInfoLog(program);
-        if (programLog != null && programLog.trim().length() > 0) {
+        if (programLog.trim().length() > 0) {
             System.err.println(programLog);
         }
         if (linked == 0) {
